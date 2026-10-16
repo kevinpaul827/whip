@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Whip account</title>
+<style>
+  /* Same tokens and rules as site/index.html and view/styles.css, so the app,
+     the site and billing read as one product. The card is the page's one raised
+     object, so the buttons inside it stay flat. */
+  :root{
+    color-scheme: light;
+    --ink:#111111;
+    --paper:#f7f4ec;
+    --surface:#ffffff;
+    --hover:#f1eee6;
+    --muted:#5c5850;
+    --hairline:rgba(17,17,17,.14);
+    --accent:#ffd84d;
+    --accent-press:#ffcf26;
+    --mint:#a6ecc9;
+    --coral:#ff8f7e;
+    --line:2px solid var(--ink);
+    --radius:14px;
+    --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  [hidden]{display:none !important}
+  :focus-visible{outline:3px solid var(--ink); outline-offset:3px}
+  body{
+    margin:0; min-height:100vh; padding:clamp(16px,4vw,48px);
+    color:var(--ink); font:1rem/1.5 var(--font);
+    background:
+      radial-gradient(circle at 4% 0%, rgba(255,216,77,.40), transparent 38%),
+      radial-gradient(circle at 100% 100%, rgba(201,184,255,.55), transparent 48%),
+      var(--paper);
+    -webkit-font-smoothing:antialiased;
+    display:grid; place-items:start center;
+  }
+  main{width:min(100%, 32rem)}
+  .brand{
+    display:inline-flex; align-items:center; min-height:44px; margin-bottom:16px;
+    font-size:1.375rem; font-weight:900; letter-spacing:-.04em;
+    text-decoration:none; color:inherit;
+  }
+  .card{
+    display:grid; gap:14px;
+    border:var(--line); border-radius:20px; background:var(--surface);
+    box-shadow:5px 5px 0 var(--ink); padding:clamp(20px,4vw,32px);
+  }
+  h1{margin:0; font-size:clamp(2rem,6vw,2.5rem); font-weight:900; line-height:1; letter-spacing:-.035em}
+  p{margin:0; line-height:1.5; color:var(--muted)}
+  p.plain{color:var(--ink)}
+  /* The script writes some labels in capitals; render them in sentence case. */
+  label, button:not(.linkish), .pill span{text-transform:lowercase}
+  label::first-letter, button::first-letter{text-transform:uppercase}
+  label{display:block; margin-top:6px; font-size:.9375rem; font-weight:700}
+  input{
+    width:100%; min-height:52px; padding:12px 16px; font:inherit; font-size:1.0625rem; font-weight:600;
+    border:var(--line); border-radius:var(--radius); background:var(--surface); color:var(--ink);
+    transition:box-shadow 100ms ease-out;
+  }
+  input::placeholder{color:#8a857b}
+  input:focus{outline:none; box-shadow:4px 4px 0 var(--ink)}
+  button, .btn{
+    display:block; width:100%; min-height:52px; padding:14px 20px;
+    font:inherit; font-size:1rem; font-weight:800; line-height:1.2;
+    border:var(--line); border-radius:var(--radius); cursor:pointer;
+    background:var(--accent); color:var(--ink);
+    text-align:center; text-decoration:none;
+    transition:transform 80ms ease-out, background-color 120ms ease;
+  }
+  button:hover:not(:disabled){background:var(--accent-press)}
+  button:active:not(:disabled){transform:scale(.98)}
+  button:disabled{opacity:.55; cursor:wait}
+  button.ghost{background:var(--surface)}
+  button.ghost:hover:not(:disabled){background:var(--hover)}
+  .pill{
+    display:inline-flex; justify-self:start; gap:8px; align-items:baseline;
+    padding:6px 16px; border-radius:999px; background:var(--mint);
+  }
+  .pill[data-level="low"], .pill[data-level="none"]{background:var(--coral)}
+  .pill b{font-size:1.25rem; font-weight:900; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+  .pill span{font-size:.9375rem; font-weight:700}
+  .note{
+    padding:12px 14px; border:var(--line); border-radius:var(--radius);
+    background:#fff4c7; color:var(--ink); font-weight:600; line-height:1.45;
+  }
+  .muted-row{
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    margin-top:6px; padding-top:14px; border-top:1px solid var(--hairline);
+    color:var(--muted); font-size:.9375rem;
+  }
+  button.linkish{
+    display:inline-flex; align-items:center; width:auto; min-height:44px; padding:0 2px;
+    border:0; background:none; color:var(--ink); font-size:.9375rem; font-weight:700;
+    text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:4px;
+  }
+  button.linkish:hover:not(:disabled){background:none; text-decoration-color:var(--muted)}
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important}
+    button:active:not(:disabled){transform:none}
+  }
+  @media (prefers-contrast: more){
+    :root{--muted:#2f2c27; --hairline:var(--ink)}
+    body{background:var(--paper)}
+  }
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="./">WHIP</a>
+  <div class="card" id="card">
+    <h1>Loading…</h1>
+  </div>
+</main>
+
+<script type="module">
+// Billing lives here and only here. The Mac app and the phone companion read
+// entitlement out of the database; nothing but this page and the Stripe
+// functions behind it can start or change a subscription.
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// Publishable, and safe to ship: Row Level Security is what protects a row.
+// Keep these identical to config.ts and ios-app/Shared/WhipConfig.swift.
+const SUPABASE_URL = 'https://bnfiyxstskelmfxnivan.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_h76O3Lmi-Hun7al3ji-zZg_hUMtn5pL';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const card = document.getElementById('card');
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+/** Call one of the billing functions with the signed-in person's token. */
+async function billingCall(name) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Sign in first.');
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.url) throw new Error(body.error || 'Billing is unavailable right now.');
+  return body.url;
+}
+
+function renderSignIn() {
+  card.replaceChildren();
+  card.append(el('h1', null, 'Your Whip account'));
+  card.append(el('p', null,
+    'Sign in with the same email you use in the app. Your free trial and your subscription both follow the account.'));
+
+  const label = el('label', null, 'EMAIL');
+  label.htmlFor = 'email';
+  const email = el('input');
+  email.id = 'email';
+  email.type = 'email';
+  email.autocomplete = 'email';
+  email.placeholder = 'you@example.com';
+
+  const action = el('button', null, 'EMAIL ME A LINK');
+  const note = el('p', 'note');
+  note.hidden = true;
+
+  async function send() {
+    if (!email.value.trim()) { email.focus(); return; }
+    action.disabled = true;
+    action.textContent = 'SENDING…';
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.value.trim(),
+      options: { emailRedirectTo: window.location.href.split('?')[0] },
+    });
+    action.disabled = false;
+    action.textContent = 'EMAIL ME A LINK';
+    note.hidden = false;
+    note.textContent = error
+      ? error.message
+      : 'Check your email — the link signs you in here, and the six-digit code in the same message signs you in on your Mac.';
+  }
+
+  action.addEventListener('click', send);
+  email.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); void send(); }
+  });
+
+  card.append(label, email, action, note);
+  email.focus();
+}
+
+function describe(entitlement) {
+  if (entitlement.state === 'active') {
+    const until = entitlement.currentPeriodEnd
+      ? new Date(entitlement.currentPeriodEnd).toLocaleDateString(undefined,
+          { day: 'numeric', month: 'long', year: 'numeric' })
+      : null;
+    if (entitlement.cancelAtPeriodEnd && until) return `Your subscription ends on ${until}.`;
+    return until ? `Subscribed. Renews on ${until}.` : 'Subscribed.';
+  }
+  if (entitlement.state === 'trialing') {
+    return `You have ${entitlement.blocksRemaining} of ${entitlement.blocksLimit} free blocks left. ` +
+      'One block is one distraction Whip stepped in front of — no card, no time limit.';
+  }
+  return `You have used all ${entitlement.blocksLimit} free blocks. Subscribe to keep Whip enforcing.`;
+}
+
+async function renderAccount(email) {
+  card.replaceChildren();
+  card.append(el('h1', null, 'Loading…'));
+
+  const { data, error } = await supabase.rpc('whip_entitlement');
+  card.replaceChildren();
+
+  if (error) {
+    card.append(el('h1', null, 'Your Whip account'));
+    card.append(el('p', 'plain', `Could not read your account: ${error.message}`));
+    return;
+  }
+
+  const entitlement = data;
+  const heading = entitlement.state === 'active' ? 'You’re subscribed.'
+    : entitlement.state === 'trialing' ? 'Free trial'
+    : 'Trial complete';
+  card.append(el('h1', null, heading));
+
+  if (entitlement.state !== 'active') {
+    const pill = el('div', 'pill');
+    pill.dataset.level = entitlement.blocksRemaining === 0 ? 'none'
+      : entitlement.blocksRemaining <= 20 ? 'low' : 'ok';
+    pill.append(el('b', null, String(entitlement.blocksRemaining)));
+    pill.append(el('span', null, entitlement.blocksRemaining === 1 ? 'BLOCK LEFT' : 'BLOCKS LEFT'));
+    card.append(pill);
+  }
+
+  card.append(el('p', 'plain', describe(entitlement)));
+
+  const problem = el('p', 'note');
+  problem.hidden = true;
+
+  async function go(name, button, label) {
+    button.disabled = true;
+    button.textContent = 'OPENING…';
+    try {
+      window.location.href = await billingCall(name);
+    } catch (err) {
+      button.disabled = false;
+      button.textContent = label;
+      problem.hidden = false;
+      problem.textContent = err.message;
+    }
+  }
+
+  if (entitlement.state === 'active') {
+    const manage = el('button', null, 'MANAGE SUBSCRIPTION');
+    manage.addEventListener('click', () => go('whip-portal', manage, 'MANAGE SUBSCRIPTION'));
+    card.append(manage);
+  } else {
+    const subscribe = el('button', null, 'SUBSCRIBE');
+    subscribe.addEventListener('click', () => go('whip-checkout', subscribe, 'SUBSCRIBE'));
+    card.append(subscribe);
+    if (entitlement.hasBilling) {
+      const manage = el('button', 'ghost', 'MANAGE BILLING');
+      manage.addEventListener('click', () => go('whip-portal', manage, 'MANAGE BILLING'));
+      card.append(manage);
+    }
+  }
+
+  card.append(problem);
+
+  if (new URLSearchParams(window.location.search).get('checkout') === 'done'
+      && entitlement.state !== 'active') {
+    problem.hidden = false;
+    problem.textContent =
+      'Payment received. It can take a few seconds to land — reload this page if the status still says trial.';
+  }
+
+  const row = el('div', 'muted-row');
+  row.append(el('span', null, email));
+  const out = el('button', 'linkish', 'Sign out');
+  out.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    renderSignIn();
+  });
+  row.append(out);
+  card.append(row);
+}
+
+async function boot() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.email) await renderAccount(session.user.email);
+  else renderSignIn();
+}
+
+// The magic link comes back with the session in the URL fragment, which the
+// client picks up asynchronously — rendering before that lands would show the
+// sign-in form to someone who has just signed in.
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.user?.email) void renderAccount(session.user.email);
+});
+
+void boot();
+</script>
+</body>
+</html>

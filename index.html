@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f4ec">
+<meta name="description" content="Intelligent blocking that keeps you on task. Whip is a focus guard for Mac and iPhone that judges sites by what you're actually looking at. Mac beta available.">
+<title>Whip</title>
+<style>
+  /* One screen, nothing to scroll: what Whip is, that it's unfinished, and
+     where to get it. Same tokens as the app (docs/DESIGN.md). The fuller
+     page is kept as draft.html. */
+  :root {
+    color-scheme: light;
+    --ink: #111111;
+    --paper: #f7f4ec;
+    --muted: #5c5850;
+    --accent: #ffd84d;
+    --accent-press: #ffcf26;
+    --line: 2px solid var(--ink);
+    --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100svh;
+    padding: clamp(20px, 4vw, 40px) clamp(16px, 5vw, 48px);
+    color: var(--ink);
+    font: 1.0625rem/1.5 var(--font);
+    background:
+      radial-gradient(circle at 4% 0%, rgba(255, 216, 77, 0.4), transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(201, 184, 255, 0.55), transparent 50%),
+      var(--paper);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+  .brand {
+    font-size: 1.375rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+  }
+
+  main {
+    align-self: center;
+    display: grid;
+    gap: 22px;
+    justify-items: start;
+    width: min(38rem, 100%);
+    margin-inline: auto;
+  }
+
+  /* A quiet status line, not a badge: a small dot and a few words. */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .status::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    /* Small marks need more saturation than fills: the app's status-dot green. */
+    background: #1f9d63;
+    box-shadow: 0 0 0 4px rgba(31, 157, 99, 0.16);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.5rem, 6.5vw, 4rem);
+    font-weight: 900;
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+
+  p { margin: 0; max-width: 34rem; }
+  .lede { font-size: clamp(1.0625rem, 2vw, 1.25rem); line-height: 1.45; }
+  .lede + .lede { margin-top: -8px; }
+  /* The button and what it needs, side by side, like an app's download row. */
+  .get {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 20px;
+    margin-top: 6px;
+  }
+  .requirements {
+    display: grid;
+    gap: 1px;
+    font-size: 0.9375rem;
+    line-height: 1.35;
+  }
+  .requirements strong { font-weight: 700; letter-spacing: -0.01em; }
+  .requirements span { color: var(--muted); }
+
+  /* The page's one raised object. Responds on press: it drops into its shadow. */
+  .download {
+    display: inline-flex;
+    align-items: center;
+    min-height: 56px;
+    padding: 14px 26px;
+    border: var(--line);
+    border-radius: 14px;
+    background: var(--accent);
+    box-shadow: 4px 4px 0 var(--ink);
+    color: var(--ink);
+    font-size: 1.0625rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background-color 120ms ease;
+  }
+  .download:hover { background: var(--accent-press); }
+  .download:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+
+  footer {
+    color: var(--muted);
+    font-size: 0.8125rem;
+    letter-spacing: 0.005em;
+    opacity: 0.85;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .download { transition: none; }
+    .download:active { transform: none; box-shadow: 4px 4px 0 var(--ink); }
+  }
+
+  @media (prefers-contrast: more) {
+    :root { --muted: #2f2c27; }
+    body { background: var(--paper); }
+  }
+</style>
+</head>
+<body>
+  <header><span class="brand">WHIP</span></header>
+
+  <main>
+    <span class="status">Work in progress</span>
+    <h1>Intelligent blocking that keeps you on task.</h1>
+    <p class="lede">Whip is a focus guard for Mac and iPhone. Tell it what you're working on in one line and it keeps you on track, with no blocklists to maintain. Sites that can go either way, like YouTube and Reddit, are judged by the content you're actually looking at.</p>
+    <p class="lede">You keep every resource that helps, and Whip takes care of the blocking with almost no input from you.</p>
+    <!-- Always the newest release. Works once the first release is published (docs/SHIPPING.md). -->
+    <div class="get">
+      <a class="download" href="https://github.com/kevinpaul827/whip/releases/latest/download/Whip.zip">Download Mac beta</a>
+      <p class="requirements"><strong>macOS 12 or later</strong><span>iPhone app coming soon</span></p>
+    </div>
+  </main>
+
+  <footer>Designed and built by Kevin Paul</footer>
+</body>
+</html>
